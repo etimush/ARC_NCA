@@ -1,0 +1,148 @@
+
+  body{
+    height: 100%;
+    overflow: visible;
+  }
+  d-article{
+    height: 100%;
+    overflow: visible;
+    counter-reset: figures;
+
+  }
+
+
+
+  d-contents{
+    display: none;
+    height: 100%;
+    position: sticky;
+    top: 25%;
+  }
+  figure {
+      text-align: center;
+      margin-bottom: 0.5em;
+      margin-top: 0.5em;
+      counter-increment: figures;
+    }
+    figure img {
+      text-align: center;
+      max-width: 100%;
+      width: unset;
+    }
+    video {
+      max-width: 100%;
+    }
+
+    figcaption {
+      text-align: center;
+    }
+    figcaption:before {
+    content: 'Fig. ' counter(figures) ' - ';
+  }
+    /* Style for figure links */
+    figure-link {
+        color: blue;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    figure-link:hover {
+      text-decoration: none;
+    }
+     /* TOC */
+
+
+    @media (min-width: 1000px) {
+      d-contents {
+        display: block;
+        align-self: start;
+        grid-column-start: 1;
+        grid-column-end: 3;
+        justify-self: end;
+        padding-right: 3em;
+        padding-left: 2em;
+        border-right: 1px solid rgba(0, 0, 0, 0.1);
+        border-right-width: 1px;
+        border-right-style: solid;
+        border-right-color: rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    @media (min-width: 1180px) {
+      d-contents {
+        display: block;
+        align-self: start;
+        grid-column-start: 1;
+        grid-column-end: 3;
+        justify-self: end;
+        padding-right: 3em;
+        padding-left: 2em;
+        border-right: 1px solid rgba(0, 0, 0, 0.1);
+        border-right-width: 1px;
+        border-right-style: solid;
+        border-right-color: rgba(0, 0, 0, 0.1);
+      }
+
+      d-contents nav {
+      position: sticky;
+      top: 0; /* required */}
+
+    d-contents nav h3 {
+      margin-top: 0;
+      margin-bottom: 1em;
+
+    }
+
+    nav.sticky{
+    position: sticky;
+      top: 0;
+    }
+
+    d-contents nav a {
+      color: rgba(0, 0, 0, 0.8);
+      border-bottom: none;
+      text-decoration: none;
+    }
+
+    d-contents li {
+      list-style-type: none;
+    }
+
+    d-contents ul {
+      padding-left: 1em;
+    }
+
+    d-contents nav ul li {
+      margin-bottom: 0.25em;
+    }
+
+    d-contents nav a:hover {
+      text-decoration: underline solid rgba(0, 0, 0, 0.6);
+    }
+
+    d-contents nav ul {
+      margin-top: 0;
+      margin-bottom: 6px;
+    }
+
+    d-contents nav > div {
+      display: block;
+      outline: none;
+      margin-bottom: 0.5em;
+    }
+
+    d-contents nav > div > a {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    @media (min-width: 1180px) {
+        .base-grid, distill-header, d-title, d-abstract, d-article, d-appendix, distill-appendix, d-byline, d-footnote-list, d-citation-list, distill-footer {
+            grid-template-columns: [screen-start] 1fr [page-start kicker-start] 60px [middle-start] 60px [text-start kicker-end] 60px 60px 60px 60px 60px 60px 60px 60px [text-end gutter-start] 60px [middle-end] 60px [page-end gutter-end] 1fr [screen-end];
+            grid-column-gap: 45px;
+        }
+
+        d-contents nav > div > a:hover,
+        d-contents nav > ul > li > a:hover {
+            text-decoration: none;
+        }
+    }}
