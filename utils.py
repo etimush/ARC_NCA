@@ -6,6 +6,17 @@ import re
 import os
 import json
 
+def show_batch(results, channels=4, fig_num = 3):
+    x = results.cpu().clone().permute((0, 2, 3, 1)).detach().numpy()
+    plt.figure(fig_num)
+    num = results.shape[0]
+    if num > 8:
+        num = 8
+    for i in range(num):
+        img = x[i, :, :, 0:channels]
+        plt.figure(fig_num)
+        plt.subplot(2, 4, i + 1)
+        plt.imshow(img)
 
 
 def get_batch(pool, x_prime, batch_size, noise_level = 0.0):
@@ -52,5 +63,5 @@ def create_empty_json(filepath):
     directory = os.path.dirname(filepath)
     if directory and not os.path.exists(directory):
         os.makedirs(directory)
-    with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump({}, f) # Writes the empty dictionary as JSON
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump({}, f) # Writes the empty dictionary as JSON
