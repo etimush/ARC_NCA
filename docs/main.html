@@ -1,0 +1,129 @@
+<!--
+  Copyright 2018 The Distill Template Authors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<!--[if IE lte 8]><script src="http://html5shiv.googlecode.com/svn/trunk/html5.js" defer></script><![endif]-->
+<head>
+  <script src="./template.v2.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel = "stylesheet" href="style.css">
+  <meta charset="utf8">
+</head>
+
+<body>
+
+  <d-front-matter>
+    <script id='distill-front-matter' type="text/json">{
+    "title": "ARC-NCA: Towards Developmental Solutions to the Abstraction and Reasoning Corpus",
+    "description": "Although \" extremely useful for visualizing high-dimensional data, t-SNE plots can sometimes be mysterious or misleading.",
+    "published": "March 1, 2025",
+
+
+    "authors": [
+      {
+        "author":"Etienne Guichard",
+        "authorURL":"",
+        "affiliations": [{"name": "Østfold University College", "url": "https://www.hiof.no/english/"}]
+      },
+
+      {
+        "author":"Felix Simon Reimers",
+        "authorURL":"https://www.hiof.no/iio/english/people/aca/felixsr/index.html",
+        "affiliations": [
+          {"name": "Østfold University College", "url": "https://www.hiof.no/english/"}
+        ]
+      },
+
+      {
+        "author":"Mia-Katrin Kvalsund",
+        "authorURL":"https://www.mn.uio.no/fysikk/english/people/aca/mkkvalsu",
+        "affiliations": [
+          {"name": "University of Oslo", "url": "https://www.uio.no/english/"}
+        ]
+      },
+      {
+        "author":"Mikkel Lepperød",
+        "authorURL":"https://lepmik.github.io/",
+        "affiliations": [
+          {"name": "Simula Research Laboratory, University of Oslo", "url": "https://www.simula.no/"}
+        ]
+      },
+      {
+        "author":"Stefano Nichele*",
+        "authorURL":"https://www.nichele.eu/",
+        "affiliations": [{"name": "Østfold University College, Oslo Metropolitan University", "url": "https://www.hiof.no/english/"}]
+      }
+
+
+    ],
+    "_url": "https://etimush.github.io/EngramNCA/",
+    "journal": "Github Preprint",
+    "katex": {
+      "delimiters": [
+        {"left": "$$", "right": "$$", "display": false}
+      ]
+    }
+  }</script>
+  </d-front-matter>
+  <d-title>
+    <figure style="grid-column: page; margin: 1rem 0;"><video loop autoplay playsinline muted src="figures/banner.mp4"
+        style="width:100%; border: 1px solid rgba(0, 0, 0, 0.2);" /></figure>
+    <p><b>Left:</b> GeneCA trained to grow simple polygons through immutable gene encodings. These polygons are stable in time, exhibit individuality (strong morphological boundaries), and their genes can be combined to produce new out-of-training polygons.
+      <b>Center:</b> GenePropCA trained to grow a lizard morphology by exploiting the gene embeddings of the GeneCA (left). The GeneCA cannot modify its own gene embedding, and the GenePropCA cannot modify the visible channels, yet the GenePropCA can learn to exploit the GeneCA gene embeddings and force it to draw a target morphology.
+    <b>Right:</b> By adding immutable genes to the GenePropCA that neither it nor the GeneCA can modify, we can encode multiple target morphologies, where the GenePropCA can exploit the GeneCA genes to grow different morphologies.</p>
+  </d-title>
+  <d-byline></d-byline>
+
+  <d-article margib-bottom: 0>
+
+    <p style="color:#696969;font-size:13px;">Current version: draft v.0.1, Feb 2025 <br> *Corresponding author <a href="stefano.nichele@hiof.no" target="_blank">(stefano.nichele@hiof.no)</a> <br> Paper Repository: <a href="https://github.com/etimush/EngramNCA" target="_blank">GitHub</a> <br>PDF Preprint: <a href="https://arxiv.org/abs/2504.11855" target="_blank">(preprint)</a> <br> Published article: will be added here <br> Google Colab: <a target="_blank" href="https://colab.research.google.com/github/etimush/EngramNCA/blob/main/EngramNCA.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a></p>
+
+  </d-article>
+
+%% article.html
+
+  <d-appendix>
+
+    <d-bibliography src="bibliography.bib"></d-bibliography>
+
+  </d-appendix>
+
+
+  <d-appendix>
+<h3>Acknowledgement</h3>
+  <p>This work was partially supported by The Digital Society
+strategic initiative at Øsftold University College.</p>
+  </d-appendix>
+
+  <h2>Appendix 1</h2>
+
+  <distill-appendix>
+  <p>BibTeX Citation</p>
+  <pre class="citation">
+  @article{Guichard2025EngramNCA},
+  title = {EngramNCA: a Neural Cellular Automaton Model of Molecular Memory Transfer},
+  author = {Guichard, Etienne and Reimers, Felix and Kvalsund, Mia-Katrin and Lepper{\o}d, Mikkel and Nichele, Stefano},
+  journal = {Github Preprint},
+  year = {2025},
+  url = { https://etimush.github.io/EngramNCA/}
+  }</pre>
+  </distill-appendix>
+
+<script src="./figs.js"></script>
+</body>
