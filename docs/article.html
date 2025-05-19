@@ -3,27 +3,217 @@
 
     <a class="marker" href="#section-1" id="section-1"></a>
     <h2>Introduction</h2>
-
 %% contents.html
+
+    <p>Progress towards artificial general intelligence (AGI) necessitates benchmarks that rigorously assess an agent's capacity for abstraction,
+        generalization, and reasoning. The Abstraction and Reasoning Corpus (ARC), introduced by <d-cite key="chollet2019measure"></d-cite>, is one of such benchmarks.
+        It comprises a collection of visual pattern transformation tasks, each defined by a few input-output examples, challenging AI models to infer the
+        underlying transformation rules and apply them to novel instances. Test pairs consist of two components: an "input grid," which is a rectangular
+        array of cells with varying dimensions (up to 30 rows by 30 columns), where each cell holds one of ten distinct "values," and an "output grid,"
+        which can be entirely derived from the attributes and structure of the input grid. One of such tasks is depicted in <a href="#arc-example" class="figure-link" data-target="arc-example"></a>.
+        The purpose is to examine the example pairs to grasp the nature of the problem and utilize this understanding to produce the corresponding output
+        grid for each given test input. Two attempts can be performed for each input grid. Each task is handcrafted by human designers with a unique logical
+        structure, making it very difficult to prepare for each task in advance.
+        Such emphasis on few-shot learning and the necessity for broad generalization make ARC-AGI particularly demanding for current AI systems.</p>
+
+    <figure style="text-align: center; margin: 4rem 0;" id="arc-example"><img playsinline src="figures/ARC-AGI-example.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Example ARC task, adapted from <d-cite key="chollet2019measure"></d-cite>.</figcaption>
+    <p><br></p>
+
+
+    <p>In contrast, humans excel at these tasks, leveraging innate cognitive abilities to discern patterns and apply abstract reasoning with minimal examples.
+        This disparity underscores a fundamental gap in current AI methods and highlights the need for novel approaches.</p>
+
+    <p>One promising avenue lies in the realm of developmental computation, inspired by the processes observed in living systems. Neural Cellular Automata (NCA)
+        <d-cite key="gilpin2019cellular, mordvintsev2020growing, nichele2017neat"></d-cite>, exemplify this approach. NCAs are computational models where each cell on a lattice
+        updates its state based on local interactions governed by neural networks, leading to the emergence of complex global patterns. As such, NCAs have been used
+        as models of biological morphogenesis <d-cite key="randazzo2023biomaker, stovold2023neural, pontes2022single, sudhakaran2021growing"></d-cite>, where local cellular interactions
+        give rise to organized structures during development (such as bodies and brains). Furthermore, biological brains employ cognitive mechanisms that may mirror developmental
+        processes to facilitate reasoning, abstraction, and problem-solving through dynamic, iterative, and self-organizing processes. Examples include iterative refinement of
+        mental schemas through interactions with the environment <d-cite key="mcvee2005schema, neumann2018use"></d-cite>, hierarchical structuring to break down tasks in sub-tasks
+        <d-cite key="botvinick2009hierarchically, meunier2009hierarchical"></d-cite>, and predictive modeling to anticipate outcomes and proactively adjust solutions \citep{friston2003learning,
+        seth2014cybernetic, millidge2021predictive}. The hypothesis tested in this work is whether the developmental nature of NCAs makes them particularly suited for tasks like
+        those in the ARC-AGI benchmark. </p>
+
+
+    <p>In the last years, most approaches for ARC-AGI relied on discrete program search, a brute force methodology. Recently,
+        Large Language Models (LLMs) have been utilized in different ways, including for optimizing domain-specific languages <d-cite key="chollet2024arc"></d-cite>. Further,
+        LLMs have been used for program synthesis with the intention of generating programs in general-purpose languages, e.g., Python, that attempt to solve the task at hand.
+        Test-time training, also known as inference-time fine-tuning, has been rather popular in the last few months to allow inference-time adaptations based on unseen test samples.
+        Often, hybrid approaches, including program synthesis and transductions, i.e., direct prompting an LLM, have been combined. However, solving the ARC is still an open problem and the solution might still lie in uncharted areas of model selection.</p>
+
+
+    <p>In this paper, we introduce ARC-NCA, a novel approach that leverages the developmental dynamics of standard Neural Cellular Automata <d-cite key="mordvintsev2020growing"></d-cite> and an enhanced variant with hidden memory states, termed EngramNCA <d-cite key="guichard2025engramnca"></d-cite>, to tackle the ARC-AGI benchmark. To the best of our knowledge, this is the first time NCAs are used for the 2D ARC-AGI benchmark. EngramNCA is chosen, in addition to standard NCAs, because it relies on mechanisms for learning low-level morphologies and manipulations first, and then a regulation mechanism for deciding when and where such primitives should be activated and propagated, which is considered a suitable mechanism for abstraction and reasoning tasks. By emulating the principles of biological development and cognitive development, our models aim to capture essential aspects of human-like abstraction and reasoning. Our ARC-NCA approach may be considered a program synthesis approach, where a custom NCA (a "program") is generated for the task at hand with a fine-tuning process akin to test-time training. Our proof-of-concept demonstrates that ARC-NCA may reach performances comparable, and sometimes superior, to existing models (including ChatGPT 4.5, see results and discussion section for details), but with significantly reduced computational resources.
+We hope that our work will spark a renewed interest within the artificial life community for radically new approaches to abstraction and reasoning. </p>
+
+
+
 
     <a class="marker" href="#section-2" id="section-2"></a>
     <h2>Models and Methods</h2>
 
+    <p>This section details the models used in obtaining developmental solutions to the  <i>Abstraction and Reasoning Corpus</i>. We chiefly explore NCA models and their derivatives in the form of classic NCA and EngramNCA (and modifications to EngramNCA).</p>
+
 
     <a class="marker" href="#section-2.1" id="section-2.1"></a>
     <h3>NCA Modes</h3>
+    <p>We choose to test the Growing NCA as presented by <d-cite key="mordvintsev2020growing"></d-cite>, along with four versions of EngramNCA
+        presented in <d-cite key="guichard2025engramnca"></d-cite>: EngramNCA v1, an unmodified version of EngramNCA, EngramNCA v2,  v3, and v4,
+        modified versions of EngramNCA with ARC-specific augmentations.  </p>
 
+
+
+    <p>We believe the standard NCA model needs no detailed introduction. In short, it is implemented as a differentiable neural network embedded 
+        in a cellular automaton framework, where each cell maintains a continuous state vector updated through convolutional neural networks (CNNs) 
+        with learned local update rules. The architecture is depicted in <a href="#NCA" class="figure-link" data-target="NCA"></a>. However, EngramNCA is a relatively recent model and
+        thus warrants a brief introduction. Its NCA features dual-state cells with distinct public (interaction-based) and private (memory-based) states. 
+        The model is an ensemble that includes: GeneCA, an NCA which generates morphological patterns from a seed cell encoding genetic primitives 
+        (<a href="#GeneCA" class="figure-link" data-target="GeneCA"></a>); GenePropCA,  an NCA which propagates and activates these genetic primitives across the cell network
+        (<a href="#GenePropCA" class="figure-link" data-target="GenePropCA"></a>), similar to RNA-based communication <d-cite key="shomrat2013automated"></d-cite>. EngramNCA is trained in two
+        stages: first, GeneCA is trained to grow primitive morphologies containing immutable private memory encodings, using only publicly 
+        visible channels for coordination; then, GenePropCA is trained to modulate the private memory of cells without altering their visible 
+        states, enabling the transfer of genetic information across the grid. For details on the model see <d-cite key="guichard2025engramnca"></d-cite>.</p>
+
+
+    <figure style="text-align: center; margin: 4rem 0;" id="NCA"><img playsinline src="figures/GNCA-model.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Diagram depicting one pass of the Growing NCA update step and its neural network model. Adapted from <d-cite key="mordvintsev2020growing"></d-cite>.</figcaption>
+    <p><br></p>
+
+    <figure style="text-align: center; margin: 4rem 0;" id="GeneCA"><img playsinline src="figures/GeneCA-model.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Diagram depicting one pass of the EngramNCA GeneCA update step and its neural network model. Adapted from <d-cite key="guichard2025engramnca"></d-cite>.</figcaption>
+    <p><br></p>
+
+    <figure style="text-align: center; margin: 4rem 0;" id="GenePropCA"><img playsinline src="figures/GenePropCA-model.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Diagram depicting one pass of the EngramNCA GenePropCA update step and its neural network model. Adapted from <d-cite key="guichard2025engramnca"></d-cite>.</figcaption>
+    <p><br></p>
+
+
+
+
+    <p><a href="#Archi" class="figure-link" data-target="Archi"></a> shows the different CA architectures. The augmentations are detailed in sections <a href="#section-2.3.1">Toroidal versus Non-Toroidal Problems</a>, <a href="#section-2.3.2">Local versus Global Solutions</a>, and <a href="#section-2.3.3">Inappropriate Sensing</a>. </p>
+
+
+    <figure style="text-align: center; margin: 4rem 0;" id="Archi"><img playsinline src="figures/archtitecture.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Architecture detail for all CA variants. The different notations for NCA and EngramNCA on Channels, Hidden Size are due to the split versus standard architecture between the two.</figcaption>
+    <p><br></p>
 
     <a class="marker" href="#section-2.2" id="section-2.2"></a>
     <h3>From ARC to NCA</h3>
+
+    <p>The ARC dataset mainly comprises 2D grids with integer values. Each grid can range from 1x1 to 30x30 in size, with values ranging between 0 and 9.
+        We address two major issues with transforming ARC grids into NCA-compatible ones:</p>
 
 
     <a class="marker" href="#section-2.2.1" id="section-2.2.1"></a>
     <h4>From 2D Integer grid to 3D real-valued lattice</h4>
 
+    <p>NCA mainly operate on $3D$ lattices of dimensions <d-math>H,W,C</d-math>, where <d-math>H</d-math> is the height, <d-math>W</d-math> is the width, and <d-math>C</d-math> is
+        the number of channels, most commonly four channels for <d-math>RGB-\alpha</d-math> values of an image, and an arbitrary amount
+        of hidden channels. To transform the ARC grids into NCA lattices, we first assume two conditions:</p>
+
+    <ul style="margin-top: 0">
+        <li>Constant <d-math>\alpha</d-math>: all colors represented by the 10 integers have the same alpha value of 1.</li>
+        <li>Equal spacing: all 10 colors (0-9) are equally spaced apart in an HSL (hue, saturation, and lightness) color spectrum, starting with black for 0.</li>
+    </ul>
+
+
+    <p>We then transform the ARC problems into an <d-math>RGB-\alpha</d-math> lattice using an integer-to-HSL-to-<d-math>RGB-\alpha</d-math> conversion equation:</p>
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+     h = \frac{v}{n} \times 360 \quad  \text{Hue calculation}
+    </d-math>
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+     l = 0.5 \quad \text{(Fixed Lightness)}
+    </d-math>
+    <d-math style="text-align: center; margin: 2rem 0;">
+     s = 0.8 \quad \text{(Fixed Saturation)}
+    </d-math>
+    <d-math style="text-align: center; margin: 2rem 0;">
+     C = (1 - |2l - 1|) \times s \times (v>0) \quad \text{(Chroma)}
+    </d-math>
+    <p><br></p>
+    <p>Here, <d-math>v</d-math> is the integer value in that grid position, and <d-math>n</d-math> is the total number of colors.</p>
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+     X = c \times \left(1 - | \left(\frac{h}{60} \pmod 2\right) - 1 |\right)
+    </d-math>
+
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+     R' =
+    \begin{cases}
+        C & \text{if } 0^\circ \le h < 60^\circ \\
+        X & \text{if } 60^\circ \le h < 120^\circ \\
+        X & \text{if } 240^\circ \le h < 300^\circ \\
+        C & \text{if } 300^\circ \le h < 360^\circ \\
+        0 & \text{otherwise}
+    \end{cases}
+    </d-math>
+
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+     G' =
+    \begin{cases}
+        X & \text{if } 0^\circ \le h < 60^\circ \\
+        C & \text{if } 60^\circ \le h < 120^\circ \\
+        X & \text{if } 120^\circ \le h < 180^\circ \\
+        X & \text{if } 180^\circ \le h < 240^\circ \\
+        0 & \text{otherwise}
+    \end{cases}
+    </d-math>
+
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+     B' =
+    \begin{cases}
+        X & \text{if } 120^\circ \le h < 180^\circ \\
+        C & \text{if } 180^\circ \le h < 240^\circ \\
+        C & \text{if } 240^\circ \le h < 300^\circ \\
+        X & \text{if } 300^\circ \le h < 360^\circ \\
+        0 & \text{otherwise}
+    \end{cases}
+    </d-math >
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+    R = (R' + M) \times 255
+
+    </d-math>
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+    G = (G' + M) \times 255 \quad
+
+    </d-math>
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+    B = (B' + M) \times 255
+
+    </d-math>
+
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+        \alpha = 255 * (v>0)
+    </d-math>
+    <p><br></p>
+
+
+    <p>We extend the channel dimension of the <d-math>RGB-\alpha</d-math> lattice with a binary encoding for each pixel based on its color. We finally pad the channel dimension with ones to reach the desired number of hidden channels.</p>
+
+
+
 
     <a class="marker" href="#section-2.2.2" id="section-2.2.2"></a>
     <h4>Dealing with changing grid size</h4>
+
+    <p>Certain ARC problems contain solutions whose grid size differs from the input. This presents a pernicious problem
+        in that NCAs cannot modify their grid size. To deal with this, we explore two methods:</p>
+
+    <ul style="margin-top: 0">
+        <li>Ignore the problematic grids: Remove them from the training procedure.</li>
+        <li>Maximal size padding: Pad every problem to the maximal 30x30 grid size with a special padding value, one uniquely only found in the padded areas, and allow the NCA to modify the amount of padding.</li>
+    </ul>
+
+    <p>Due to computational constraints, we choose to mainly focus on ignoring the problematic grids. However, <a href="#section-4.5">Further Experiments</a> details the experiments done with Maximal size padding. All results will be reported on the 262 problems that do not require resizing.</p>
 
     <a class="marker" href="#section-2.3" id="section-2.3"></a>
     <h3>ARC Specific Augmentations</h3>
@@ -46,7 +236,7 @@
     <a class="marker" href="#section-3.2" id="section-3.2"></a>
     <h3>Model Training</h3>
 
-    <a class="marker" href="#section-3" id="section-4"></a>
+    <a class="marker" href="#section-4" id="section-4"></a>
     <h2>Results</h2>
 
     <a class="marker" href="#section-4.1" id="section-4.1"></a>
