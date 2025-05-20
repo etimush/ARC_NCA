@@ -80,11 +80,9 @@
   }</script>
   </d-front-matter>
   <d-title>
-    <figure style="grid-column: page; margin: 1rem 0;"><video loop autoplay playsinline muted src="figures/banner.mp4"
-        style="width:100%; border: 1px solid rgba(0, 0, 0, 0.2);" /></figure>
-    <p><b>Left:</b> GeneCA trained to grow simple polygons through immutable gene encodings. These polygons are stable in time, exhibit individuality (strong morphological boundaries), and their genes can be combined to produce new out-of-training polygons.
-      <b>Center:</b> GenePropCA trained to grow a lizard morphology by exploiting the gene embeddings of the GeneCA (left). The GeneCA cannot modify its own gene embedding, and the GenePropCA cannot modify the visible channels, yet the GenePropCA can learn to exploit the GeneCA gene embeddings and force it to draw a target morphology.
-    <b>Right:</b> By adding immutable genes to the GenePropCA that neither it nor the GeneCA can modify, we can encode multiple target morphologies, where the GenePropCA can exploit the GeneCA genes to grow different morphologies.</p>
+    <figure style="grid-column: page; margin: 1rem 0;"><video loop autoplay playsinline muted src="figures/cOLLECTION.mp4"
+        style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure>
+    <p>A collection of developmental solutions to the <i>Abstraction and Reasoning Corpus</i> (ARC-AGI) produced by various Cellular Automata.</p>
   </d-title>
   <d-byline></d-byline>
 
@@ -127,7 +125,7 @@
       </ul>
     <div><a href="#section-4">Results</a></div>
       <ul>
-    <div><a href="#section-4.1">Generalesults</a></div>
+    <div><a href="#section-4.1">General Results</a></div>
     <div><a href="#section-4.2">Solved Problems</a></div>
     <div><a href="#section-4.3">Almost Solved Problems</a></div>
     <div><a href="#section-4.4">Reasoning Pitfalls</a></div>
@@ -354,39 +352,182 @@ We hope that our work will spark a renewed interest within the artificial life c
 
     <a class="marker" href="#section-2.3.1" id="section-2.3.1"></a>
     <h4>Toroidal versus Non-Toroidal Problems</h4>
+    <p>In general, NCA operates on a toroidal lattice. While this is desirable for tasks such as growing morphologies, as it means the morphology is positionally invariant, it causes issues in ARC-AGI problems where absolute positions and grid edges are a necessary part of the reasoning. Disabling this behavior is also not a reasonable option, as some ARC-AGI problems become easier to solve if information propagates toroidally.</p>
+    <p>We remedy this in EngramNCA v3 and EngramNCA v4 in two ways: by splitting the functionality of the GeneCA and GenePropCA. The former acts on a non-toroidal lattice, while the latter acts on a toroidal lattice, and by giving each cell channel-wise local self-attention. </p>
+    <p>The hypothesis is that by splitting the functionality and imbuing it with attention, the EngramNCA might be able to choose whether or not it exhibits toroidal functionality. </p>
 
     <a class="marker" href="#section-2.3.2" id="section-2.3.2"></a>
     <h4>Local versus Global Solutions</h4>
 
+    <p>Another problem comes in the form of whether the NCA should focus on global or local information when solving ARC problems (or a mix of the two). This should, in theory, not be a problem. However, we qualitatively observe that some problems struggle with fine-grained local information. </p>
+    <p>We introduce a patch training scheme to force the NCA to focus on local information. This scheme works on the same principle as the standard way of NCA training, with the key difference being that the NCA is trained on- and loss is accumulated over- 3x3 patches of the grid, instead of the entire grid at once. Since this is an augmentation to NCA training, it becomes more costly to train the NCA, thus, we choose to only use this augmentation in EngramNCA v4. </p>
+
+
     <a class="marker" href="#section-2.3.3" id="section-2.3.3"></a>
     <h4>Inappropriate Sensing</h4>
+
+    <p>Due to NCA's initial applications being the simulation of the growth of organisms, the sensing mechanisms somewhat mimic biological cells' chemosensing mechanisms, in the form of gradient sensing kernels. While a helpful analogy, this might present a fundamental limitation for the purposes of ARC. To combat this, we choose to augment EngramNCA v3 and EngramNCA v4 with fully learnable sensing filters in place of the Sobel and Laplacian filters. The number of filters was chosen to match that of the standard EngramNCA.</p>
+
+
 
     <a class="marker" href="#section-3" id="section-3"></a>
     <h2>Training</h2>
 
+
+
+
     <a class="marker" href="#section-3.1" id="section-3.1"></a>
     <h3>Determining the Quality of Solutions</h3>
 
+     <p>During training, the NCA effectively produces an image. We ostensibly do not consider the developmental steps the NCA takes to reach the final solution. Thus, we take the loss to be <d-math>MSEPixelWiseLoss</d-math> as in <d-cite key="mordvintsev2020growing"></d-cite>.
+
+To determine whether a problem is solved, we look at the mean pixel error across the generated NCA. An evaluation loss of <d-math>log(MSEPixelWiseLoss) \leq -7</d-math>, where this loss was evenly distributed among pixels, was experimentally determined to produce exact solutions to the ARC problems.</p>
+
     <a class="marker" href="#section-3.2" id="section-3.2"></a>
     <h3>Model Training</h3>
+    
+    <p>We choose to solve ARC via test-time training. As stated by <d-cite key="chollet2019measure, chollet2024arc"></d-cite>, program generators must be able to learn from new information. We take this to mean that our program generator, the system that trains NCAs, can train a new CA per problem. For every problem, we train a new CA from scratch on the 2-3 training examples and evaluate its performance on the unseen sample. All our experiments are run on the ARC-AGI public evaluation set.</p>
+
+    <figure style="text-align: center; margin: 4rem 0;" id="Train"><img playsinline src="figures/training_both%20(2).svg";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Diagram depicting one pass of the Growing NCA update step and its neural network model. Adapted from <d-cite key="mordvintsev2020growing"></d-cite>.</figcaption>
+    <p><br></p>
+
+    <p><a href="#Train" class="figure-link" data-target="Train"></a> shows one training iteration of the training procedure for EngramNCA versions. The training procedure mirrors that of <d-cite key="guichard2025engramnca"></d-cite> with one key modification. Due to training both the GeneCA and GenePropCA from scratch for each problem, the GeneCA weights are not frozen, and both sets of weights are co-optimized. The standard NCA was instead trained with the same procedure shown in <d-cite key="mordvintsev2020growing"></d-cite>.</p>
+
+    <d-math style="text-align: center; margin: 2rem 0;">
+        PixelWiseMSE = \frac{1}{H \times W \times C} \sum_{i=0}^{H} \sum_{j=0}^{W} \sum_{k=0  }^{C} \left( I(i, j, k) - \hat{I}(i, j, k) \right)^2
+
+    </d-math>
+
+    <p>Where <d-math>H</d-math>, <d-math>W</d-math>, and <d-math>C</d-math> are the dimensions of the image, <d-math>I</d-math> is the reference image, and <d-math>\hat{I}</d-math> is the final state of the NCA.</p>
+
+    <p>We use AdamW as the optimizer, with a learning rate (LR) of <d-math>1e-3</d-math>. For each problem, the CA are trained for 3000 iterations, with a 66%  reduction in LR at 2000 iterations.  </p>
 
     <a class="marker" href="#section-4" id="section-4"></a>
     <h2>Results</h2>
 
     <a class="marker" href="#section-4.1" id="section-4.1"></a>
-    <h3>General <R></R>esults</h3>
+    <h3>General Results</h3>
+
+    <p>In this section, we present the results of each CA in the form of Mean <d-math>log(loss)</d-math> and the CA solve rate. The same results were obtained for the union of different CA. As a reminder to the reader, two answers may be submitted when solving ARC; thus, by taking the union (each model produces one output) we still produce a valid submission.</p>
+
+    <figure style="text-align: center; margin: 4rem 0;" id="CARESULTS"><img playsinline src="figures/CAREsults.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Mean <d-math>log(loss)</d-math> and solve rate for all four CA variations. The best results are highlighted in green, and the worst results are highlighted in red. <d-math>\star</d-math> Due to space constraints in the paper, and the fact that the results are very similar to EngramNCA v4, we omit EngramNCA v2 from many of the result discussions, including the unions of models. <d-math>\star\star</d-math> The results for Chat GPT 4.5 are taken from the ARC-AGI leaderboard <d-cite key="ARCprizeLeader"></d-cite>. Note that such results were obtained on the ARC-AGI private evaluation set, instead of the public evaluation set as for our results.</figcaption>
+    <p><br></p>
+
+    <p><a href="#CARESULTS" class="figure-link" data-target="CARESULTS"></a> shows the mean <dmath>log(loss)</dmath> and solve rate for each CA. EngramNCA v3 performs best in both categories with a near 13% solve rate. In contrast, EngramNCA v1 performs the worst in both metrics, with a solve rate of 6.5%.</p>
+
+
+    <figure style="text-align: center; margin: 4rem 0;" id="cost"><img playsinline src="figures/cost.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Cost per task for each model. We calculate the estimated cost of our models on an NVIDIA RTX 4070 Ti by taking the average time and power usage (W) to train a task for each model and multiplying it by the cost/kWh in our area ($0.37/kWh). Chat GPT 4.5 cost taken from <d-cite key="ARCprizeLeader"></d-cite>.</figcaption>
+    <p><br></p>
+
+    <p><a href="#cost" class="figure-link" data-target="cost"></a> shows the cost comparison between the CA models we experimented with and Chat GPT 4.5. We chose to compare to Chat GPT 4.5 as it has solve rates similar to ours and is one of the most popular LLMs. At roughly the same performance, we see a 1000x decrease in cost.</p>
+
+    <figure style="text-align: center; margin: 4rem 0;" id="union"><img playsinline src="figures/union.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Mean <d-math>log(loss)</d-math> and solve rate for unions .</figcaption>
+    <p><br></p>
+
+    <p><a href="#union" class="figure-link" data-target="union"></a> shows the mean <d-math>log(loss)</d-math> and solve rate for six unions of the CA. In this case, the union of EngramNCa v1 and EngramNCA v3 performs best for the solve rate, with a 15.3%  solve rate. Effectively, half of the EngramNCA v1 solutions were not found in EngramNCA v3. All unions perform roughly equal or better than the single best model, indicating that all models have some non-overlapping problems they can solve. NCA and EngramNCA v3 performed best for mean <d-math>log(loss)</d-math>, which is to be expected as they both had the lowest mean losses. EngramNCA v1 and EngramNCA v4 performed worst in both categories. </p>
 
     <a class="marker" href="#section-4.2" id="section-4.2"></a>
     <h3>Solved Problems</h3>
 
+    <p>In this section, we highlight one solved problem per CA type to show the developmental steps the CA models take to solve ARC problems. More video examples can be found <a href="https://etimush.github.io/ARC-NCA-Videos/">here</a>.</p>
+
+
+    <figure style="text-align: center; margin: 2rem 0;" id="NCAsol"><video loop autoplay playsinline muted width="640px"; src="figures/NCA_sol.mp4" style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);"/></figure><figcaption>An example of solution generated by standard NCA and relative training pairs.</figcaption>
+    <p><br></p>
+
+    <p><a href="#NCAsol" class="figure-link" data-target="NCAsol"></a> shows an example of one of the solutions produced by the NCA model and the two training examples. In this problem, a line of a given length is presented in a random y coordinate and the correct solution corresponds to adding green lines of increasing length above the input line and orange lines of decreasing length below. Such a solution grows correctly in an incremental manner by the NCA, which generalizes to unseen y coordinates.</p>
+
+    <figure style="text-align: center; margin: 2rem 0;" id="V1sol"><video loop autoplay playsinline muted width="640px"; src="figures/V1_sol.mp4" style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);"/></figure><figcaption>An example of solution generated by EngramNCA v1 and relative training pairs.</figcaption>
+    <p><br></p>
+
+    <p><a href="#V1sol" class="figure-link" data-target="V1sol"></a> shows an example of one of the solutions produced by the EngramNCA v1 model, the standard version of EngramNCA. This problem presents horizontal and vertical lines (of different color in different examples) crossing and therefore composing constrained spaces in the middle and open spaces on the outside. The correct solution fills the closed and open parts with given colors. The CA solution grows cells of green color to fill the entire space; however when they are surrounded by boundaries they are able to change to the right color. </p>
+
+    <figure style="text-align: center; margin: 2rem 0;" id="V3sol"><video loop autoplay playsinline muted width="640px"; src="figures/V3_sol.mp4" style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);"/></figure><figcaption>An example of solution generated by EngramNCA v3 and relative training pairs.</figcaption>
+    <p><br></p>
+
+    <p><a href="#V3sol" class="figure-link" data-target="V3sol"></a> shows an example of one of the solutions produced by the EngramNCA v3 model. In this test, the input contains single pixels and the correct solution connects those on the same horizontal or vertical line. The CA grows lines from the pixels and sometimes overshoots after the connecting pixel; however, it is able to remove the parts not needed that reach the boundaries. </p>
+
+    <figure style="text-align: center; margin: 2rem 0;" id="V4sol"><video loop autoplay playsinline muted width="640px"; src="figures/V4_sol.mp4" style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);"/></figure><figcaption>An example of solution generated by EngramNCA v4 and relative training pairs.</figcaption>
+    <p><br></p>
+
+    <p><a href="#V4sol" class="figure-link" data-target="V4sol"></a> shows an example of one of the solutions produced by the EngramNCA v4 model. This test contains a single vertical line on the left side of the grid. The correct solution grows a horizontal line on the bottom and a diagonal line from the bottom left corner to the top right corner. The CA grows a solution that crosses the toroidal boundary and grows from both corners which eventually connects in the middle. Solutions generalize to different grid sizes.</p>
+
     <a class="marker" href="#section-4.3" id="section-4.3"></a>
     <h3>Almost Solved Problems</h3>
+
+    <p>ARC-NCA have the ability to produce partial solutions, or "almost solved" problems. These solutions typically have a
+        few pixels wrong (or slightly wrong) but could serve as the basis for further refinement. It is also possible that these
+        few mistakes can be removed with improvements to the architecture or simply by increasing the size of the NCA. To determine what sort
+        of performance we would obtain by focusing on the partial solutions, we loosen the loss threshold to <d-math>-6</d-math>. <a href="#part-sol" class="figure-link" data-target="part-sol"></a>
+        shows the solve rate when the loss threshold is loosened. The models solve anywhere from 2% - 6% more of the problems, indicating that there
+        is potential for much better performance from relatively small adjustments. <a href="#part-union" class="figure-link" data-target="part-union"></a> indicate the unions of the results
+        from different CA models. </p>
+
+
+
+    <figure style="text-align: center; margin: 4rem 0;" id="part-sol"><img playsinline src="figures/loose.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Solve rate for CA modes when loss threshold is loosened to -6.</figcaption>
+    <p><br></p>
+
+
+    <figure style="text-align: center; margin: 4rem 0;" id="part-union"><img playsinline src="figures/loose%20union.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Mean <d-math>log(loss)</d-math> and solve rate for all six CA union variations with loosened loss threshold.</figcaption>
+    <p><br></p>
+
+
+    <p>We further analyze some examples from those with minor mistakes next. <a href="#V3part" class="figure-link" data-target="V3part"></a> shows an example of a near solution produced by EngramNCA v3. We can see that the model has the general concepts to solve the problem correctly. However, three pixels are miscolored in regions with much open space. This indicates an edge case that was probably absent in the training set. <a href="#V1part" class="figure-link" data-target="V1part"></a> shows an example of a near solution produced by EngramNCa v1. In this example, the model produces an exact solution at some point. However, due to the general asynchronous nature of NCA, we let the model run until it ends in a stable state. This stable state is off by one pixel. </p>
+
+
+    <figure style="text-align: center; margin: 2rem 0;" id="V3part"><video loop autoplay playsinline muted width="640px"; src="figures/V3_part.mp4" style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);"/></figure><figcaption>An example of a near solution produced by EngramNCA v3.</figcaption>
+    <p><br></p>
+
+    <figure style="text-align: center; margin: 2rem 0;" id="V1part"><video loop autoplay playsinline muted width="640px"; src="figures/V1_part.mp4" style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);"/></figure><figcaption>An example of a near solution produced by EngramNCA v1.</figcaption>
+    <p><br></p>
+
 
     <a class="marker" href="#section-4.4" id="section-4.4"></a>
     <h3>Reasoning Pitfalls</h3>
 
+    <p>Occasionally, we observe problems where the models (qualitatively) manage <i>some</i> of the reasoning steps
+        necessary to solve a particular problem, but fall short of a perfect completion. In this section, we showcase
+        some of the model-problem pairs and attempt to reason about what reasoning pitfalls they might have encountered. </p>
+
+    <figure style="text-align: center; margin: 2rem 0;" id="V4part"><video loop autoplay playsinline muted width="640px"; src="figures/V4_part.mp4" style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);"/></figure><figcaption>An example of partial reasoning success in a solution of ARC generated by EngramNCA v4.</figcaption>
+    <p><br></p>
+
+    <p><a href="#V4part" class="figure-link" data-target="V4part"></a> depicts an example of a partial reasoned solution produced by the EngramNCA v4 model.
+Here we can see the model learns one of the two reasoning steps, that of growing <i>a</i> pattern of the correct shape on the orange dots. However, it fails to generalise to any pattern on the left and gets the exact pixel colors wrong.</p>
+
     <a class="marker" href="#section-4.5" id="section-4.5"></a>
     <h3>Further Experiments</h3>
+
+
+
+    <p>In this section, we detail the results of two further experiments conducted: Increasing the dimension of the hidden layer of EngramNCA v3, and solving all ARC-AGI problems by use of maximal padding as described in <a href="#section-2.2.2">Dealing with changing grid sizes</a>.</p>
+
+    <figure style="text-align: center; margin: 4rem 0;" id="expArch"><img playsinline src="figures/CAplus.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Architecture detail for EngramNCA v3 and its maximally padded version.</figcaption>
+    <p><br></p>
+
+
+    <p><a href="#expArch" class="figure-link" data-target="expArch"></a> shows the architecture details for larger EngramNCA v3 and its maximally padded version. </p>
+
+    <figure style="text-align: center; margin: 4rem 0;" id="resPlus"><img playsinline src="figures/resultsplus.png";
+          style="width:100%; border: 0px solid rgba(0, 0, 0, 0.2);" /></figure><figcaption>Solve rate for larger EngramNCA v3 and its maximally padded version compared to Chat GPT 4.5.
+<d-math>\star</d-math> For the sake of neatness, Chat GPT 4.5 results are displayed on the same table, even though they are not comparable through Mean <d-math>log(loss)</d-math>.</figcaption>
+    <p><br></p>
+
+
+    <p><a href="#resPlus" class="figure-link" data-target="resPlus"></a> shows the results of EngramNCA v3 and its maximally padded version as compared to Chat GPT 4.5.
+        By increasing the hidden size, we can observe an increase in the number of problems solved. Maximal padding increases the
+        number of problems the CA has to solve, yet we do not see a decrease in the percentage of problems the CA can solve, suggesting
+        that self-size modification is trivial for the CA or that the extra information provided by the padding tokens has helped with some of the problems.
+        The maximal padding does incur a cost as NCA memory usage and run time scale poorly with lattice size. Despite this, they both still outperform Chat GPT 4.5.
+        Leaving room for partial solutions, we see that the maximally padded version sees a significant increase in its solve rate (27% versus 16%).</p>
 
 
     <a class="marker" href="#section-5" id="section-5"></a>
@@ -413,7 +554,7 @@ Other correction mechanisms may also be considered, for example relying on NCAs 
     <p>Finally, NCAs operating at an abstract, latent representation <d-cite key="menta2024latent"></d-cite>, may be able to capture basic primitives beneficial for reasoning, by shifting the computation from the input space to the latent space. This may be particularly relevant for architectures as EngramNCA, which try to capture basic primitives first, and then regulation mechanisms for their activation and communication.
 </p>
 
-    
+
 
   </d-article>
   <d-appendix>
@@ -439,7 +580,7 @@ strategic initiative at Øsftold University College.</p>
   author = {Guichard, Etienne and Reimers, Felix and Kvalsund, Mia-Katrin and Lepper{\o}d, Mikkel and Nichele, Stefano},
   journal = {Github Preprint},
   year = {2025},
-  url = { https://etimush.github.io/EngramNCA/}
+  url = { https://etimush.github.io/ARC_NCA/}
   }</pre>
   </distill-appendix>
 
