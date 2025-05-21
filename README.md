@@ -8,6 +8,11 @@ Visualise: Make .mp4 videos of selected problems for selected CA. <br>
 Visualise_PAdded: Make .mp4 videos of selected problems for selected CA. <br>
 Data_parsing: generates statistics and comparisons. <br>
 
-# Video Gallery of Solutions 
-## Important!! Copy and paste the URL, clicking on it does not work for some reason!!! It does NOT work on Safari, only chrome and firefox, be sure to scroll slowly as there are a large amount of videos. 
-https://anonymous.4open.science/w/ARC-NCA-Videos-CCF6/
+## Paper
+https://arxiv.org/abs/2505.08778
+
+## Online Paper
+https://etimush.github.io/ARC_NCA/
+
+## Video Gallery 
+https://etimush.github.io/ARC-NCA-Videos/
